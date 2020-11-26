@@ -1,49 +1,51 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
-public class CarMovement : MonoBehaviour
+public class CarMovement : NetworkBehaviour
 {
     [SerializeField] private Vector3 maxSpeed = Vector3.zero;
     [SerializeField] private Vector3 moveVelocity = Vector3.zero;
     [SerializeField] private float speed = 0;    
     private GameObject cam;
     private Rigidbody rb;
+    private Gun gun;
     private float delta;
     private int frame;
     void Start(){
         moveVelocity = new Vector3(0, 0, 0);
         cam = GetComponentInChildren<Camera>().gameObject;
         rb = GetComponent<Rigidbody>();
+        gun = GetComponentInChildren<Gun>();
     }
 
-    void Update(){
-        frame++;
-        delta += Time.deltaTime;
-        if(delta >= 1f){
-            Debug.Log(frame);
-            delta = 0;
-            frame = 0;
-        }
-    }
     private void FixedUpdate(){
-        CalmVelocity();
+        if (!this.isLocalPlayer)
+        {
+            gameObject.GetComponentInChildren<Camera>().enabled = false;
+            gameObject.GetComponentInChildren<AudioListener>().enabled = false;
+        }
 
-        MoveForwardBackward();
+        if (this.isLocalPlayer)
+        {
+            CalmVelocity();
 
-        MoveSides();
-        MoveUpDown();
+            MoveForwardBackward();
+
+            MoveSides();
+            MoveUpDown();
+            gun.Move();
 
 
+            rb.velocity = moveVelocity.z * transform.forward;
+            rb.velocity = new Vector3(rb.velocity.x, moveVelocity.y, rb.velocity.z);
 
-        rb.velocity = moveVelocity.z * transform.forward;
-        rb.velocity = new Vector3(rb.velocity.x, moveVelocity.y, rb.velocity.z);
+            transform.Rotate(0, moveVelocity.x * Time.deltaTime * 4f, 0);
 
-        transform.Rotate(0, moveVelocity.x * Time.deltaTime * 4f, 0);
-
-        transform.eulerAngles = new Vector3(-moveVelocity.y, transform.eulerAngles.y, -moveVelocity.x);
-        cam.transform.eulerAngles = new Vector3(cam.transform.eulerAngles.x, transform.eulerAngles.y, -moveVelocity.x / 2f);
-
+            transform.eulerAngles = new Vector3(-moveVelocity.y, transform.eulerAngles.y, -moveVelocity.x);
+            cam.transform.eulerAngles = new Vector3(cam.transform.eulerAngles.x, transform.eulerAngles.y, -moveVelocity.x / 2f);
+        }
     }
 
     private void MoveForwardBackward()
